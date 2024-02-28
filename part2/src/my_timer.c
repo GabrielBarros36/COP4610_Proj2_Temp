@@ -74,7 +74,10 @@ static void __exit hello_exit(void){
 module_init(hello_init);
 module_exit(hello_exit);
 
-struct timespec64 time;
-ktime_get_real_ts64(&time);
+int main(void){
 
-printf(time->tv_sec);
+	struct timespec64 time;
+	ktime_get_real_ts64(&time);
+
+	printk(KERN_INFO "Current time: %lld\n", (long long)time.tv_sec);
+}
