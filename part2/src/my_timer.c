@@ -23,7 +23,7 @@ static char msg[BUF_LEN];
 static int procfs_buf_len;
 
 static ssize_t procfile_read(struct file* file, char* ubuf, size_t count, loff_t* ppos){
-	print(KERN_INFO "proc_read\n");
+	printk(KERN_INFO "proc_read\n");
 	procfs_buf_len = strlen(msg);
 	if(*ppos > 0 || count < procfs_buf_len)
 		return 0;
@@ -55,7 +55,7 @@ static ssize_t procfile_write(struct file* file, const char* ubuf, size_t count,
 //FINISH FILLING THIS IN AS PER SLIDE
 static const struct proc_ops procfile_fops = {
 	.proc_read = procfile_read, .proc_write = procfile_write
-}
+};
 
 static int __init hello_init(void){
 	proc_entry = proc_create(ENTRY_NAME, PERMS, PARENT, &procfile_fops);
@@ -72,9 +72,9 @@ static void __exit hello_exit(void){
 }
 
 module_init(hello_init);
-module_exit(hello_);
+module_exit(hello_exit);
 
 struct timespec64 time;
-ktime_get_real_ts64(time&);
+ktime_get_real_ts64(&time);
 
 printf(time->tv_sec);
