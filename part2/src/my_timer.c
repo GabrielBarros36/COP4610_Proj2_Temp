@@ -74,4 +74,7 @@ static void __exit hello_exit(void){
 module_init(hello_init);
 module_exit(hello_);
 
+struct timespec64 time;
+ktime_get_real_ts64(time&);
 
+printf(time->tv_sec);
