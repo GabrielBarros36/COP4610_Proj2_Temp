@@ -102,6 +102,8 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	ktime_get_real_ts64(&ts_now);
 	len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum));
+
+	latestNum = ts_now.tv_sec;
 	
 	return simple_read_from_buffer(ubuf, count, ppos, buf, len);
 }
