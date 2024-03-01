@@ -8,6 +8,12 @@
 #include <linux/string.h>
 #include <linux/kthread.h>
 
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <linux/buffer_head.h>
+#include <linux/slab.h>
+#include <asm/uaccess.h>
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
 MODULE_DESCRIPTION("A simple Linux kernel module");
@@ -20,13 +26,6 @@ MODULE_VERSION("1.0");
 #define PROC_PATH "/proc/timer"
 static struct proc_dir_entry *timer_entry;
 
-
-#include <linux/fs.h>
-#include <linux/segment.h>
-#include <linux/buffer_head.h>
-#include <linux/slab.h>
-//#include <stdio.h>
-//#include <stdlib.h>
 
 /*
 
@@ -50,6 +49,7 @@ void parseLastNumber(const char *filename, long long *x) {
 
 */
 
+/*
 static long long read_last_number(const char *filepath) {
     struct file *file;
     long long last_number = 0;
@@ -87,6 +87,7 @@ static long long read_last_number(const char *filepath) {
 
     return last_number;
 }
+*/
 
 static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){
 	struct timespec64 ts_now; 
@@ -97,7 +98,7 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	//parseLastNumber(PROC_PATH, latestNum);
 
-	latestNum = read_last_number(PROC_PATH);
+	//latestNum = read_last_number(PROC_PATH);
 
 	ktime_get_real_ts64(&ts_now);
 	len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum));
