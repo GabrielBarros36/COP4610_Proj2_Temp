@@ -54,12 +54,13 @@ static ssize_t procfile_write(struct file* file, const char* ubuf, size_t count,
 
 //FINISH FILLING THIS IN AS PER SLIDE
 static const struct proc_ops procfile_fops = {
-	.proc_read = procfile_read, .proc_write = procfile_write
+	.proc_read = procfile_read, 
+	.proc_write = procfile_write,
 };
 
 static int __init hello_init(void){
-	proc_entry = proc_create(ENTRY_NAME, PERMS, PARENT, &procfile_fops);
 
+	proc_entry = proc_create(ENTRY_NAME, PERMS, PARENT, &procfile_fops);
 	if(proc_entry == NULL)
 		return -ENOMEM;
 
@@ -74,10 +75,3 @@ static void __exit hello_exit(void){
 module_init(hello_init);
 module_exit(hello_exit);
 
-int main(void){
-
-	struct timespec64 time;
-	ktime_get_real_ts64(&time);
-
-	printk(KERN_INFO "Current time: %lld\n", (long long)time.tv_sec);
-}
