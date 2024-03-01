@@ -21,9 +21,14 @@ MODULE_VERSION("1.0");
 static struct proc_dir_entry *timer_entry;
 
 
+#include <linux/fs.h>
+#include <linux/segment.h>
+#include <linux/buffer_head.h>
+#include <linux/slab.h>
+//#include <stdio.h>
+//#include <stdlib.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+/*
 
 void parseLastNumber(const char *filename, long long *x) {
     FILE *file;
@@ -43,6 +48,46 @@ void parseLastNumber(const char *filename, long long *x) {
     fclose(file);
 }
 
+*/
+
+static long long read_last_number(const char *filepath) {
+    struct file *file;
+    long long last_number = 0;
+    mm_segment_t oldfs;
+    char buf[128]; // Assuming numbers are not longer than 128 bytes
+    int bytes_read;
+
+    // Open the file
+    oldfs = get_fs();
+    set_fs(get_ds());
+    file = filp_open(filepath, O_RDONLY, 0);
+    set_fs(oldfs);
+
+    if (IS_ERR(file)) {
+        printk(KERN_ERR "Error opening file: %s\n", filepath);
+        return 0;
+    }
+
+    // Seek to the end of the file and read backwards (this is a simplified example)
+    // Real implementation might involve more complex logic
+    oldfs = get_fs();
+    set_fs(get_ds());
+    bytes_read = kernel_read(file, buf, sizeof(buf), &(file->f_pos));
+    set_fs(oldfs);
+
+    // Parse the last number from buf here
+    // This is a simplified placeholder logic
+    if (bytes_read > 0) {
+        // Logic to parse the last number from the buffer
+        // last_number = parse_number_from_buffer(buf);
+    }
+
+    // Close the file
+    filp_close(file, NULL);
+
+    return last_number;
+}
+
 static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){
 	struct timespec64 ts_now; 
 	long long timeDiff;
@@ -50,7 +95,9 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 	int len = 0;
 	long long latestNum = 0;
 
-	parseLastNumber(PROC_PATH, latestNum);
+	//parseLastNumber(PROC_PATH, latestNum);
+
+	latestNum = read_last_number(PROC_PATH);
 
 	ktime_get_real_ts64(&ts_now);
 	len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum));
