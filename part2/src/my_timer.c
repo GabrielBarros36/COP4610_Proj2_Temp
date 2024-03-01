@@ -13,65 +13,67 @@ MODULE_AUTHOR("cop4610t");
 MODULE_DESCRIPTION("A simple Linux kernel module");
 MODULE_VERSION("1.0");
 
-#define ENTRY_NAME "hello"
+#define ENTRY_NAME "timer"
 #define PERMS 0666
 #define PARENT NULL
-
 #define BUF_LEN 100
-static struct proc_dir_entry * proc_entry;
-static char msg[BUF_LEN];
-static int procfs_buf_len;
+#define PROC_PATH "/proc/timer"
+static struct proc_dir_entry *timer_entry;
 
-static ssize_t procfile_read(struct file* file, char* ubuf, size_t count, loff_t* ppos){
-	printk(KERN_INFO "proc_read\n");
-	procfs_buf_len = strlen(msg);
-	if(*ppos > 0 || count < procfs_buf_len)
-		return 0;
 
-	if(copy_to_user(ubuf, msg, procfs_buf_len))
-		return -EFAULT;
-	*ppos = procfs_buf_len;
-	printk(KERN_INFO "gave to user %s\n", msg);
 
-	return procfs_buf_len;
+#include <stdio.h>
+#include <stdlib.h>
+
+void parseLastNumber(const char *filename, long long *x) {
+    FILE *file;
+    long long temp;
+    int readCount;
+
+    file = fopen(filename, "r");
+    if (!file) {
+        perror("Unable to open the file");
+        exit(EXIT_FAILURE);
+    }
+
+    while (fscanf(file, "%lld", &temp) == 1) {
+        *x = temp; 
+    }
+
+    fclose(file);
 }
 
-static ssize_t procfile_write(struct file* file, const char* ubuf, size_t count, loff_t* ppos){
-	printk(KERN_INFO "proc_write\n");
-	if(count > BUF_LEN)
-		procfs_buf_len = BUF_LEN;
-	else
-		procfs_buf_len = count;
+static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){
+	struct timespec64 ts_now; 
+	long long timeDiff;
+	char buf[BUF_LEN];
+	int len = 0;
+	long long latestNum = 0;
 
-	if(copy_from_user(msg, ubuf, procfs_buf_len)){
-		printk(KERN_WARNING "Failed to copy data from user space\n");
-		return -EFAULT;
-	}
+	parseLastNumber(PROC_PATH, latestNum);
+
+	ktime_get_real_ts64(&ts_now);
+	len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum));
 	
-	printk(KERN_INFO "got from user: %s\n", msg);
-	return procfs_buf_len;
+	return simple_read_from_buffer(ubuf, count, ppos, buf, len);
 }
 
-//FINISH FILLING THIS IN AS PER SLIDE
-static const struct proc_ops procfile_fops = {
-	.proc_read = procfile_read, 
-	.proc_write = procfile_write,
+static const struct proc_ops timer_fops = {
+	.proc_read = timer_read,
 };
 
-static int __init hello_init(void){
-
-	proc_entry = proc_create(ENTRY_NAME, PERMS, PARENT, &procfile_fops);
-	if(proc_entry == NULL)
+static int __init timer_init(void){
+	timer_entry = proc_create(ENTRY_NAME, PERMS, PARENT, &timer_fops);
+	if(!timer_entry){
 		return -ENOMEM;
-
+	}
 	return 0;
-
 }
 
-static void __exit hello_exit(void){
-	proc_remove(proc_entry);
+static void __exit timer_exit(void){
+	proc_remove(timer_entry);
 }
 
-module_init(hello_init);
-module_exit(hello_exit);
+module_init(timer_init);
+module_exit(timer_exit);
 
