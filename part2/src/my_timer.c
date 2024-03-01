@@ -25,7 +25,7 @@ MODULE_VERSION("1.0");
 #define BUF_LEN 100
 #define PROC_PATH "/proc/timer"
 static struct proc_dir_entry *timer_entry;
-
+long long latestNum = 0;
 
 /*
 
@@ -94,7 +94,6 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 	long long timeDiff;
 	char buf[BUF_LEN];
 	int len = 0;
-	long long latestNum = 0;
 
 	//parseLastNumber(PROC_PATH, latestNum);
 
