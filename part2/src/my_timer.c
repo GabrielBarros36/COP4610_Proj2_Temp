@@ -91,7 +91,6 @@ static long long read_last_number(const char *filepath) {
 
 static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){
 	struct timespec64 ts_now; 
-	long long timeDiff;
 	char buf[BUF_LEN];
 	int len = 0;
 
@@ -101,7 +100,7 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	ktime_get_real_ts64(&ts_now);
 
-	if(latestNum)
+	if(!latestNum)
 		len = snprintf(buf, sizeof(buf), "current time: %lld\n", (long long)(ts_now.tv_sec + ts_now.tv_nsec) );
 	else
 		len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\nsecondOnly time:%lld\nsecAndNsTime:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum), (long long)(ts_now.tv_sec), (long long)(ts_now.tv_sec + ts_now.tv_nsec) );
