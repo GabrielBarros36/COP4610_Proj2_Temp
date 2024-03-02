@@ -25,7 +25,8 @@ MODULE_VERSION("1.0");
 #define BUF_LEN 100
 #define PROC_PATH "/proc/timer"
 static struct proc_dir_entry *timer_entry;
-long long latestNum = 0;
+long long latestSec = 0;
+long long latestNs = 0;
 
 /*
 
@@ -93,20 +94,26 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 	struct timespec64 ts_now; 
 	char buf[BUF_LEN];
 	int len = 0;
-
-	//parseLastNumber(PROC_PATH, latestNum);
-
-	//latestNum = read_last_number(PROC_PATH);
+	long long secDiff;
+	long long nanoDiff; 
 
 	ktime_get_real_ts64(&ts_now);
 
-	if(!latestNum)
-		len = snprintf(buf, sizeof(buf), "current time: %lld\n", (long long)(ts_now.tv_sec + ts_now.tv_nsec) );
+	nanoDiff = ts_now.tv_nsec - latestNs;
+	secDiff = ts_now.tv_sec - latestSec;
+
+	if(nanoDiff < 0){
+		--secDiff;	
+	}
+
+	if(!latestSec)
+		len = snprintf(buf, sizeof(buf), "current time: %lld.%lld\n", (long long)(ts_now.tv_sec, (long long)ts_now.tv_nsec) );
 	else
-		len = snprintf(buf, sizeof(buf), "current time: %lld\nelapsed time:%lld\nsecondOnly time:%lld\nsecAndNsTime:%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_sec - latestNum), (long long)(ts_now.tv_sec), (long long)(ts_now.tv_sec + ts_now.tv_nsec) );
+		
+		len = snprintf(buf, sizeof(buf), "current time: %lld.%lld\nelapsed time: %lld.%lld\n", (long long)(ts_now.tv_sec, (long long)ts_now.tv_nsec) , secDiff, nanoDiff);
 
-
-	latestNum = ts_now.tv_sec;
+	latestSec = ts_now.tv_sec;
+	latestNs = ts_now.tv_nsec;
 	
 	return simple_read_from_buffer(ubuf, count, ppos, buf, len);
 }
