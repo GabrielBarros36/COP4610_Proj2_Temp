@@ -104,6 +104,7 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	if(nanoDiff < 0){
 		--secDiff;	
+		nanoDiff *= (long long)-1;
 	}
 
 	if(!latestSec)
