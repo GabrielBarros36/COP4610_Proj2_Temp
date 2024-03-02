@@ -45,10 +45,12 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
 		nanoDiff *= (long long)-1;
 	}
 
-	if(!latestSec && !latestNs)
+	if(!latestSec || !latestNs){
 		len = snprintf(buf, sizeof(buf), "current time: %lld.%lld\n", (long long)ts_now.tv_sec, (long long)ts_now.tv_nsec);
-	else
+	}
+	else{
 		len = snprintf(buf, sizeof(buf), "current time: %lld.%lld\nelapsed time: %lld.%lld\n", (long long)ts_now.tv_sec, (long long)(ts_now.tv_nsec) , secDiff, nanoDiff);
+	}
 
 	latestSec = ts_now.tv_sec;
 	latestNs = ts_now.tv_nsec;
