@@ -28,68 +28,6 @@ static struct proc_dir_entry *timer_entry;
 long long latestSec = 0;
 long long latestNs = 0;
 
-/*
-
-void parseLastNumber(const char *filename, long long *x) {
-    FILE *file;
-    long long temp;
-    int readCount;
-
-    file = fopen(filename, "r");
-    if (!file) {
-        perror("Unable to open the file");
-        exit(EXIT_FAILURE);
-    }
-
-    while (fscanf(file, "%lld", &temp) == 1) {
-        *x = temp; 
-    }
-
-    fclose(file);
-}
-
-*/
-
-/*
-static long long read_last_number(const char *filepath) {
-    struct file *file;
-    long long last_number = 0;
-    mm_segment_t oldfs;
-    char buf[128]; // Assuming numbers are not longer than 128 bytes
-    int bytes_read;
-
-    // Open the file
-    oldfs = get_fs();
-    set_fs(get_ds());
-    file = filp_open(filepath, O_RDONLY, 0);
-    set_fs(oldfs);
-
-    if (IS_ERR(file)) {
-        printk(KERN_ERR "Error opening file: %s\n", filepath);
-        return 0;
-    }
-
-    // Seek to the end of the file and read backwards (this is a simplified example)
-    // Real implementation might involve more complex logic
-    oldfs = get_fs();
-    set_fs(get_ds());
-    bytes_read = kernel_read(file, buf, sizeof(buf), &(file->f_pos));
-    set_fs(oldfs);
-
-    // Parse the last number from buf here
-    // This is a simplified placeholder logic
-    if (bytes_read > 0) {
-        // Logic to parse the last number from the buffer
-        // last_number = parse_number_from_buffer(buf);
-    }
-
-    // Close the file
-    filp_close(file, NULL);
-
-    return last_number;
-}
-*/
-
 static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){
 	struct timespec64 ts_now; 
 	char buf[BUF_LEN];
