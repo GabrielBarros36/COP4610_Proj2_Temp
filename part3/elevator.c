@@ -26,6 +26,7 @@ MODULE_VERSION("1.0");
 #define ELEVATOR_MAX_FLOOR 5    //max floor in building
 
 static struct proc_dir_entry* elevator_entry;
+bool stopRunning;
 
 //Keeps track of the passengers INSIDE the elevator
 struct {
@@ -130,13 +131,18 @@ static const struct proc_ops elevator_fops = {
 
 static int __init elevator_init(void){
 
+    stopRunning = false;
+
+    //Mapping syscalls to our custom syscalls
+    STUB_start_elevator = custom_start_elevator;
+    STUB_issue_request = custom_issue_request;
+    STUB_stop_elevator = custom_stop_elevator;
+
     //proc file operations below
     elevator_entry = proc_create(ENTRY_NAME, ENTRY_PERMS, PARENT, &elevator_fops);
     if (elevator_entry == NULL){
         return -ENOMEM;
     }
-
-    //insert rest of init operations here
 
     //Initializes empty passenger queue
     passenger_queue.total_cnt = 0;
@@ -153,6 +159,9 @@ static int __init elevator_init(void){
 }
 
 static void __exit elevator_exit(void){
+
+    stopRunning = true;
+
     //proc file operation below
     proc_remove(elevator_entry);
 
