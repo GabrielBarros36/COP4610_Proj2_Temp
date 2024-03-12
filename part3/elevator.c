@@ -56,6 +56,8 @@ int custom_start_elevator(){
 }
 
 //Our implementation of the issue_request syscall
+//Creates a passenger struct with the passenger's weight and adds that struct
+//to the passenger queue
 extern int (*STUB_issue_request)(int, int, int);
 int custom_issue_request(int passengerType, int startFloor, int destinationFloor){
 
@@ -64,6 +66,7 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
     a->id = passengerType;
 
     switch(passengerType){
+
         //Visitor, 0.5 lbs
         case 0:
             a->weight_int = 0;
