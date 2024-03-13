@@ -28,20 +28,30 @@ MODULE_VERSION("1.0");
 static struct proc_dir_entry* elevator_entry;
 bool stopRunning;
 
-//Keeps track of the passengers INSIDE the elevator
-struct {
-    int total_cnt;
-    int total_length;
-    int total_weight_int;
-    int total_weight_dec;
-    struct list_head list;
-} passengers;
 
-//Keeps track of the passengers WAITING for the elevator
-struct{
-    int total_cnt;
-    struct list_head list;
-} passenger_queue;
+struct thread_parameter {
+
+    int curFloor;
+    int destFloor;
+
+    //Keeps track of the passengers INSIDE the elevator
+    struct {
+        int total_cnt;
+        int total_length;
+        int total_weight_int;
+        int total_weight_dec;
+        struct list_head list;
+    } passengerList;
+
+    //Keeps track of the passengers WAITING for the elevator
+    struct{
+        int total_cnt;
+        struct list_head list;
+    } passenger_queue;    
+
+};
+
+struct thread_parameter elevator;
 
 typedef struct passenger{
     int id;
@@ -149,10 +159,10 @@ static int __init elevator_init(void){
     INIT_LIST_HEAD(&passenger_queue.list);
 
     //Initializes list for empty elevator
-    passengers.total_cnt = 0;
-    passengers.total_length = 0;
-    passengers.total_weight_int = 0;
-    passengers.total_weight_dec = 0;
+    passengerList.total_cnt = 0;
+    passengerList.total_length = 0;
+    passengerList.total_weight_int = 0;
+    passengerList.total_weight_dec = 0;
     INIT_LIST_HEAD(&passengers.list);
 
     return 0;
