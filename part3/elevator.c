@@ -143,7 +143,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     len = sprintf(buf, "Elevator state: \n");     /* Add elevator state when implemented*/
     len += sprintf(buf + len, "Current floor: %d\n", elevator.curFloor);
-    len += sprintf(buf + len, "Current load: %d\n", passengerList.elevator.total_weight_int);
+    len += sprintf(buf + len, "Current load: %d\n", elevator.passengerList.total_weight_int);
     len += sprintf(buf + len, "Elevator status: \n");     /* Add elevator status (passenger types and destination floor) when implemented*/
 
 
@@ -156,6 +156,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
             len += sprintf(buf + len, "[ ] Floor %d:", i);
 	    /* Print waiting passengers type and destination floor after "[ ] Floor curFloor:"*/
 	    len += sprintf(buf + len, "\n");
+	}
 
     }
     // you can finish the rest.
