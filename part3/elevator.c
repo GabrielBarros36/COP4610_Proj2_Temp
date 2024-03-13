@@ -25,6 +25,14 @@ MODULE_VERSION("1.0");
 #define WEIGHT_LIMIT 7
 #define ELEVATOR_MAX_FLOOR 5    //max floor in building
 
+int start_elevator(void);
+int issue_request(int start_floor, int destination_floor, int type);
+int stop_elevator(void);
+
+extern int (*STUB_start_elevator)(void);
+extern int (*STUB_issue_request)(int, int, int);
+extern int (*STUB_stop_elevator)(void);
+
 static struct proc_dir_entry* elevator_entry;
 bool stopRunning;
 
@@ -61,15 +69,13 @@ typedef struct passenger{
 } Passenger;
 
 //Our implementation of the start_elevator syscall
-extern int (*STUB_start_elevator)(void);
 int custom_start_elevator(){
-
+    return 0;
 }
 
 //Our implementation of the issue_request syscall
 //Creates a passenger struct with the passenger's weight and adds that struct
 //to the passenger queue
-extern int (*STUB_issue_request)(int, int, int);
 int custom_issue_request(int passengerType, int startFloor, int destinationFloor){
 
     Passenger *a;
@@ -106,16 +112,15 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
     }
 
     //Add passenger to end of queue of waiting passengers
-    list_add_tail(&a->list, &passenger_queue.list);
-    passenger_queue.total_cnt++;
+    list_add_tail(&a->list, &elevator.passenger_queue.list);
+    elevator.passenger_queue.total_cnt++;
 
     return 0;
 }
 
 //Our implementation of the stop_elevator syscall
-extern int (*STUB_stop_elevator)(void);
 int custom_stop_elevator(){
-    
+    return 0;
 }
 
 static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
@@ -155,15 +160,15 @@ static int __init elevator_init(void){
     }
 
     //Initializes empty passenger queue
-    passenger_queue.total_cnt = 0;
-    INIT_LIST_HEAD(&passenger_queue.list);
+    elevator.passenger_queue.total_cnt = 0;
+    INIT_LIST_HEAD(&elevator.passenger_queue.list);
 
     //Initializes list for empty elevator
-    passengerList.total_cnt = 0;
-    passengerList.total_length = 0;
-    passengerList.total_weight_int = 0;
-    passengerList.total_weight_dec = 0;
-    INIT_LIST_HEAD(&passengers.list);
+    elevator.passengerList.total_cnt = 0;
+    elevator.passengerList.total_length = 0;
+    elevator.passengerList.total_weight_int = 0;
+    elevator.passengerList.total_weight_dec = 0;
+    INIT_LIST_HEAD(&elevator.passengerList.list);
 
     return 0;
 }
