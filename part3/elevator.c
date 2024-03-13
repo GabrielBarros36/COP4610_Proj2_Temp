@@ -25,6 +25,13 @@ MODULE_VERSION("1.0");
 #define WEIGHT_LIMIT 7
 #define ELEVATOR_MAX_FLOOR 5    //max floor in building
 
+//Elevator status options
+#define OFFLINE 11
+#define IDLE 12
+#define LOADING 13
+#define UP 14
+#define DOWN 15
+
 int start_elevator(void);
 int issue_request(int start_floor, int destination_floor, int type);
 int stop_elevator(void);
@@ -54,7 +61,7 @@ struct thread_parameter {
     struct{
         int total_cnt;
         struct list_head list;
-    } passenger_queue;    
+    } passenger_queue;
 
 };
 
@@ -69,7 +76,7 @@ typedef struct passenger{
 
 //Our implementation of the start_elevator syscall
 int custom_start_elevator(void){
-    return 0;
+        return 0;
 }
 
 //Our implementation of the issue_request syscall
@@ -89,7 +96,7 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
             a->weight_dec = 5;
             break;
 
-        //Part-time, 1 lb    
+        //Part-time, 1 lb
         case 1:
             a->weight_int = 1;
             a->weight_dec = 0;
@@ -122,6 +129,13 @@ int custom_stop_elevator(void){
     return 0;
 }
 
+//Implementation of the elevator algorithm
+int elevator_run(void *data){
+
+    //Elevator algorithm goes here
+
+}
+
 static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
     char buf[10000];
@@ -144,7 +158,20 @@ static const struct proc_ops elevator_fops = {
 };
 
 void thread_init_parameter(struct thread_parameter *param){
+     //Initializes empty passenger queue
+    param.passenger_queue.total_cnt = 0;
+    INIT_LIST_HEAD(&elevator.passenger_queue.list);
 
+    //Initializes list for empty elevator
+    param->passengerList.total_cnt = 0;
+    param->passengerList.total_length = 0;
+    param->passengerList.total_weight_int = 0;
+    param->passengerList.total_weight_dec = 0;
+    INIT_LIST_HEAD(&param->passengerList.list);
+
+    //thread operations
+    param.kthread = kthread_run(thread_run, param, "running elevator thread");
+    
 }
 
 
@@ -169,18 +196,8 @@ static int __init elevator_init(void){
 		return -ENOMEM;
 	}
 
-    //Initializes empty passenger queue
-    elevator.passenger_queue.total_cnt = 0;
-    INIT_LIST_HEAD(&elevator.passenger_queue.list);
-
-    //Initializes list for empty elevator
-    elevator.passengerList.total_cnt = 0;
-    elevator.passengerList.total_length = 0;
-    elevator.passengerList.total_weight_int = 0;
-    elevator.passengerList.total_weight_dec = 0;
-    INIT_LIST_HEAD(&elevator.passengerList.list);
-
-    elevator.kthread = kthread_run(thread_run, &elevator, "running elevator thread");
+    //Thread operations
+    thread_init_parameter(&elevator);
     if (IS_ERR(elevator.kthread)) {
 		printk(KERN_WARNING "error spawning thread");
 		remove_proc_entry(ENTRY_NAME, NULL);
