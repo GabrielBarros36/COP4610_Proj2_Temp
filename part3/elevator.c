@@ -34,13 +34,12 @@ extern int (*STUB_issue_request)(int, int, int);
 extern int (*STUB_stop_elevator)(void);
 
 static struct proc_dir_entry* elevator_entry;
-bool stopRunning;
-
 
 struct thread_parameter {
 
     int curFloor;
     int destFloor;
+    struct task_struct *kthread;
 
     //Keeps track of the passengers INSIDE the elevator
     struct {
@@ -69,7 +68,7 @@ typedef struct passenger{
 } Passenger;
 
 //Our implementation of the start_elevator syscall
-int custom_start_elevator(){
+int custom_start_elevator(void){
     return 0;
 }
 
@@ -119,7 +118,7 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
 }
 
 //Our implementation of the stop_elevator syscall
-int custom_stop_elevator(){
+int custom_stop_elevator(void){
     return 0;
 }
 
@@ -144,9 +143,12 @@ static const struct proc_ops elevator_fops = {
     .proc_read = elevator_read,
 };
 
-static int __init elevator_init(void){
+void thread_init_parameter(struct thread_parameter *param){
 
-    stopRunning = false;
+}
+
+
+static int __init elevator_init(void){
 
     //Mapping syscalls to our custom syscalls
     STUB_start_elevator = custom_start_elevator;
@@ -159,6 +161,14 @@ static int __init elevator_init(void){
         return -ENOMEM;
     }
 
+    //More proc file operations to be done in here
+
+    if (!proc_create(ENTRY_NAME, PERMS, NULL, &fops)) {
+		printk(KERN_WARNING "thread_init");
+		remove_proc_entry(ENTRY_NAME, NULL);
+		return -ENOMEM;
+	}
+
     //Initializes empty passenger queue
     elevator.passenger_queue.total_cnt = 0;
     INIT_LIST_HEAD(&elevator.passenger_queue.list);
@@ -170,17 +180,26 @@ static int __init elevator_init(void){
     elevator.passengerList.total_weight_dec = 0;
     INIT_LIST_HEAD(&elevator.passengerList.list);
 
+    elevator.kthread = kthread_run(thread_run, &elevator, "running elevator thread");
+    if (IS_ERR(elevator.kthread)) {
+		printk(KERN_WARNING "error spawning thread");
+		remove_proc_entry(ENTRY_NAME, NULL);
+		return PTR_ERR(elevator.kthread);
+	}
+
     return 0;
 }
 
 static void __exit elevator_exit(void){
 
-    stopRunning = true;
+    kthread_stop(elevator.kthread);
 
     //proc file operation below
     proc_remove(elevator_entry);
 
-    //insert rest of exit operations here
+    STUB_start_elevator = NULL;
+	STUB_issue_request = NULL;
+	STUB_stop_elevator = NULL;
 }
 
 module_init(elevator_init);
