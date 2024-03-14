@@ -44,12 +44,13 @@ static struct proc_dir_entry* elevator_entry;
 
 struct thread_parameter {
 
-    
+    int status;
+    int cur_floor;
     struct task_struct *kthread;
 
     //Keeps track of the passengers INSIDE the elevator
     struct {
-        int cur_floor;
+        
         int total_cnt;
         int total_length;
         int total_weight_int;
@@ -138,6 +139,7 @@ int custom_stop_elevator(void){
 int elevator_run(void *data){
 
     //Elevator algorithm goes here
+    return 0;
 
 }
 
@@ -167,21 +169,19 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         if(i == elevator.cur_floor) {
             len += sprintf(buf + len, "[*] Floor %d:", i);
             /* Print waiting passengers type and destination floor after "[*] Floor cur_floor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
 
         }else{
             len += sprintf(buf + len, "[ ] Floor %d:", i);
 	    /* Print waiting passengers type and destination floor after "[ ] Floor cur_floor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
 	}
 
-	
-
 	list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
-		int passengerType = pass2->id;
-		int passengerDest = pass2->destination_floor;
+        int passengerType = pass2->id;
+        int passengerDest = pass2->destFloor;
 
-		if(passengerDest == i){
+        if(passengerDest == i){
 			len += sprintf(buf + len, " %d%d", passengerType, passengerDest); 
 		}
 	}
