@@ -67,7 +67,7 @@ struct thread_parameter {
 
 struct thread_parameter elevator;
 
-typedef struct passenger{
+typedef struct{
     int id;
     int weight_int;
     int weight_dec;
