@@ -33,7 +33,7 @@ MODULE_VERSION("1.0");
 #define DOWN 15
 
 int start_elevator(void);
-int issue_request(int start_floor, int destination_floor, int type);
+int issue_request(int passengerType, int startFloor, int destinationFloor);
 int stop_elevator(void);
 
 extern int (*STUB_start_elevator)(void);
@@ -44,8 +44,7 @@ static struct proc_dir_entry* elevator_entry;
 
 struct thread_parameter {
 
-    int curFloor;
-    int destFloor;
+    
     struct task_struct *kthread;
 
     //Keeps track of the passengers INSIDE the elevator
@@ -69,6 +68,8 @@ struct thread_parameter {
 struct thread_parameter elevator;
 
 typedef struct{
+    int curFloor;
+    int destFloor;
     int id;
     int weight_int;
     int weight_dec;
@@ -88,6 +89,8 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
     Passenger *a;
     a = kmalloc(sizeof(Passenger) * 1, __GFP_RECLAIM);
     a->id = passengerType;
+    a->curFloor = startFloor;
+    a->destFloor = destinationFloor;
 
     switch(passengerType){
 
@@ -152,7 +155,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     list_for_each_entry(pass, &elevator.passengerList.list, list) {	//Print elevator status
 	int passengerType = pass->id;
-	int passengerDest = pass->destination_floor;	//Waiting for Edgar's commit that includes destination_floor
+	int passengerDest = pass->destFloor;	//Waiting for Edgar's commit that includes destination_floor
 
 	len += sprintf(buf + len, " %d%d", passengerType, passengerDest);
     }
@@ -163,12 +166,12 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         if(i == elevator.curFloor) {
             len += sprintf(buf + len, "[*] Floor %d:", i);
             /* Print waiting passengers type and destination floor after "[*] Floor curFloor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i]);
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
 
         }else{
             len += sprintf(buf + len, "[ ] Floor %d:", i);
 	    /* Print waiting passengers type and destination floor after "[ ] Floor curFloor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i]);
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
 	}
 
 	
@@ -219,8 +222,8 @@ static const struct proc_ops elevator_fops = {
 
 void thread_init_parameter(struct thread_parameter *param){
      //Initializes empty passenger queue
-    param.passenger_queue.total_cnt = 0;
-    INIT_LIST_HEAD(&elevator.passenger_queue.list);
+    param->passenger_queue.total_cnt = 0;
+    INIT_LIST_HEAD(&param->passenger_queue.list);
 
     //Initializes list for empty elevator
     param->passengerList.total_cnt = 0;
@@ -231,7 +234,7 @@ void thread_init_parameter(struct thread_parameter *param){
     INIT_LIST_HEAD(&param->passengerList.list);
 
     //thread operations
-    param.kthread = kthread_run(thread_run, param, "running elevator thread");
+    param->kthread = kthread_run(elevator_run, param, "running elevator thread");
     
 }
 
@@ -251,7 +254,7 @@ static int __init elevator_init(void){
 
     //More proc file operations to be done in here
 
-    if (!proc_create(ENTRY_NAME, PERMS, NULL, &fops)) {
+    if (!proc_create(ENTRY_NAME, ENTRY_PERMS, NULL, &elevator_fops)) {
 		printk(KERN_WARNING "thread_init");
 		remove_proc_entry(ENTRY_NAME, NULL);
 		return -ENOMEM;
