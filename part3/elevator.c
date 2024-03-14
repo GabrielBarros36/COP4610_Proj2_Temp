@@ -54,6 +54,7 @@ struct thread_parameter {
         int total_length;
         int total_weight_int;
         int total_weight_dec;
+	int total_serviced;
         struct list_head list;
     } passengerList;
 
@@ -141,20 +142,79 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     char buf[10000];
     int len = 0;
 
-    len = sprintf(buf, "Elevator state: \n");
-    len += sprintf(buf + len, "Current floor: \n");
-    len += sprintf(buf + len, "Current load: \n");
-    len += sprintf(buf + len, "Elevator status: \n");
+    len = sprintf(buf, "Elevator state: \n");     /* Add elevator state when implemented*/
+    len += sprintf(buf + len, "Current floor: %d\n", elevator.curFloor);
+    len += sprintf(buf + len, "Current load: %d.%d\n", elevator.passengerList.total_weight_int, elevator.passengerList.total_weight_dec);
+    len += sprintf(buf + len, "Elevator status:");     /* Add elevator status (passenger types and destination floor) when implemented*/
+
+    struct Passenger *pass;	//pointers to iterate through passenger list
+    struct Passenger *pass2;
+
+    list_for_each_entry(pass, &elevator.passengerList.list, list) {	//Print elevator status
+	int passengerType = pass->id;
+	int passengerDest = pass->destination_floor;	//Waiting for Edgar's commit that includes destination_floor
+
+	len += sprintf(buf + len, " %d%d", passengerType, passengerDest);
+    }
+
+    len += sprintf(buf + len, "\n");
+
+    for(int i = 5; i > 0; i--){
+        if(i == elevator.curFloor) {
+            len += sprintf(buf + len, "[*] Floor %d:", i);
+            /* Print waiting passengers type and destination floor after "[*] Floor curFloor:"*/
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i]);
+
+        }else{
+            len += sprintf(buf + len, "[ ] Floor %d:", i);
+	    /* Print waiting passengers type and destination floor after "[ ] Floor curFloor:"*/
+	    len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i]);
+	}
+
+	
+
+	list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
+		int passengerType = pass2->id;
+		int passengerDest = pass2->destination_floor;
+
+		if(passengerDest == i){
+			len += sprintf(buf + len, " %d%d", passengerType, passengerDest); 
+		}
+	}
+
+	len += sprintf(buf + len, "\n");
+
+    }
     // you can finish the rest.
 
     // not sure what else needs to be done here
 
+    len += sprintf(buf + len, "Number of passengers: %d\n", elevator.passengerList.total_cnt);
+    len += sprintf(buf + len, "Number of passengers waiting: %d\n", elevator.passenger_queue.total_cnt);
+    len += sprintf(buf + len, "Number of passengers serviced:\n");   /* Print passengers serviced once implemented"*/
+
     return simple_read_from_buffer(ubuf, count, ppos, buf, len);
+}
+
+static ssize_t elevator_write(struct file* file, const char __user* ubuf, size_t count, loff_t* ppos) {
+    char buf[100];
+
+    if (*ppos > 0 || count > 100)
+        return -EFAULT;
+
+    if (copy_from_user(buf, ubuf, count))
+        return -EFAULT;
+
+    printk(KERN_INFO "Data written to /proc/elevator: %s\n", buf); //test message for proc entry
+
+    *ppos = count;
+    return count;
 }
 
 
 static const struct proc_ops elevator_fops = {
     .proc_read = elevator_read,
+    .proc_write = elevator_write,
 };
 
 void thread_init_parameter(struct thread_parameter *param){
@@ -167,6 +227,7 @@ void thread_init_parameter(struct thread_parameter *param){
     param->passengerList.total_length = 0;
     param->passengerList.total_weight_int = 0;
     param->passengerList.total_weight_dec = 0;
+    param->passengerList.total_serviced = 0;
     INIT_LIST_HEAD(&param->passengerList.list);
 
     //thread operations
