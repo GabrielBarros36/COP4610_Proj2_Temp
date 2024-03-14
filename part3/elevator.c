@@ -49,11 +49,12 @@ struct thread_parameter {
 
     //Keeps track of the passengers INSIDE the elevator
     struct {
+        int cur_floor;
         int total_cnt;
         int total_length;
         int total_weight_int;
         int total_weight_dec;
-	int total_serviced;
+	    int total_serviced;
         struct list_head list;
     } passengerList;
 
@@ -146,12 +147,12 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     int len = 0;
 
     len = sprintf(buf, "Elevator state: \n");     /* Add elevator state when implemented*/
-    len += sprintf(buf + len, "Current floor: %d\n", elevator.curFloor);
+    len += sprintf(buf + len, "Current floor: %d\n", elevator.cur_floor);
     len += sprintf(buf + len, "Current load: %d.%d\n", elevator.passengerList.total_weight_int, elevator.passengerList.total_weight_dec);
     len += sprintf(buf + len, "Elevator status:");     /* Add elevator status (passenger types and destination floor) when implemented*/
 
-    struct Passenger *pass;	//pointers to iterate through passenger list
-    struct Passenger *pass2;
+    Passenger *pass;	//pointers to iterate through passenger list
+    Passenger *pass2;
 
     list_for_each_entry(pass, &elevator.passengerList.list, list) {	//Print elevator status
 	int passengerType = pass->id;
@@ -163,14 +164,14 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     len += sprintf(buf + len, "\n");
 
     for(int i = 5; i > 0; i--){
-        if(i == elevator.curFloor) {
+        if(i == elevator.cur_floor) {
             len += sprintf(buf + len, "[*] Floor %d:", i);
-            /* Print waiting passengers type and destination floor after "[*] Floor curFloor:"*/
+            /* Print waiting passengers type and destination floor after "[*] Floor cur_floor:"*/
 	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
 
         }else{
             len += sprintf(buf + len, "[ ] Floor %d:", i);
-	    /* Print waiting passengers type and destination floor after "[ ] Floor curFloor:"*/
+	    /* Print waiting passengers type and destination floor after "[ ] Floor cur_floor:"*/
 	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt[i]);
 	}
 
