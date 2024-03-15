@@ -90,6 +90,12 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
 
     Passenger *a;
     a = kmalloc(sizeof(Passenger) * 1, __GFP_RECLAIM);
+
+    //Avoids kernel panic if a is null
+    if(!a){
+        return -ENOMEM;
+    }
+
     a->id = passengerType;
     a->curFloor = startFloor;
     a->destFloor = destinationFloor;
