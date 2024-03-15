@@ -261,12 +261,6 @@ static int __init elevator_init(void){
 
     //More proc file operations to be done in here
 
-    if (!proc_create(ENTRY_NAME, ENTRY_PERMS, NULL, &elevator_fops)) {
-		printk(KERN_WARNING "thread_init");
-		remove_proc_entry(ENTRY_NAME, NULL);
-		return -ENOMEM;
-	}
-
     //Thread operations
     thread_init_parameter(&elevator);
     if (IS_ERR(elevator.kthread)) {
