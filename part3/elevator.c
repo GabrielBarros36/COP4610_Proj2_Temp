@@ -44,9 +44,11 @@ static struct proc_dir_entry* elevator_entry;
 
 struct thread_parameter {
 
-    int status;
-    int cur_floor;
+    int state;
+    int curFloor;
+    int destFloor;
     struct task_struct *kthread;
+    struct mutex mutex;
 
     //Keeps track of the passengers INSIDE the elevator
     struct {
@@ -62,6 +64,7 @@ struct thread_parameter {
     //Keeps track of the passengers WAITING for the elevator
     struct{
         int total_cnt;
+        int waiting_passengers[ELEVATOR_LIMIT];
         struct list_head list;
     } passenger_queue;
 
@@ -80,7 +83,130 @@ typedef struct{
 
 //Our implementation of the start_elevator syscall
 int custom_start_elevator(void){
-        return 0;
+
+    if(elevator.state != OFFLINE){
+        printk(KERN_INFO "Elevator Already Online!\n");
+        return 1;
+    }
+        
+    if (mutex_lock_interruptible(&elevator.mutex) == 0){
+        elevator.state = IDLE; //setting idle state
+        elevator.curFloor = 1;
+
+        INIT_LIST_HEAD(&elevator.passengerList.list); //Initializing passenger list and setting to 0
+        elevator.passengerList.total_cnt = 0;
+        elevator.passengerList.total_weight_int = 0;
+        elevator.passengerList.total_weight_dec = 0;
+
+        INIT_LIST_HEAD(&elevator.passenger_queue.list); //Initializing passenger queue and setting to 0
+        elevator.passenger_queue.total_cnt = 0;
+        
+        for (int i = 0; i < ELEVATOR_MAX_FLOOR; i++){ //using a for loop to reset waiting passengers for each floor
+            elevator.passenger_queue.waiting_passengers[i] = 0;
+        }
+
+        mutex_unlock(&elevator.mutex);
+        printk(KERN_INFO "Elevator Online!");
+    } else {
+        printk(KERN_ALERT "Issue in locking elevator mutex! (Starting)\n");
+    }
+
+    return 0;
+
+}
+
+//checks that the count and weight is not exceeded
+int load_elevator(void){
+    struct list_head *temp, *dummy;
+    Passenger *p;
+
+    if(mutex_lock_interruptible(&elevator.mutex) == 0){
+        list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
+            p = list_entry(temp, Passenger, list);
+
+            if (p -> start_floor == elevator.curFloor &&
+                elevator.passengerList.total_cnt < ELEVATOR_LIMIT &&
+                (elevator.passengerList.total_weight_int + p -> weight_int) +
+                (elevator.passengerList.total_weight_dec + p -> weight_dec) / 10 <= WEIGHT_LIMIT) {
+
+                elevator.passengerList.total_weight_int += p -> weight_int;
+                elevator.passengerList.total_weight_dec += p -> weight_dec;
+
+                elevator.passengerList.total_cnt++;
+
+                list_move_tail(temp, &elevator.passengerList.list);
+
+                printk(KERN_INFO "Passenger Sucessfully Loaded, Start Floor: %d to Destination Floor %d\n", p -> start_floor, p -> destination_floor);
+            }
+        }
+        mutex_unlock(&elevator.mutex);
+    } else {
+        printk(KERN_ALERT "Failure in locking when loading elevator. \n");
+    }
+}
+
+void unload_elevator(void) {
+    struct list_head *temp, *dummy;
+    Passenger *p;
+
+    if(mutex_lock_interruptible(&elevator.mutex) == 0) {
+        list_for_each_safe(temp, dummy, &elevator.passengerList.list) {
+            p = list_entry(temp, Passenger, list);
+
+            if(p->destination_floor == elevator.curFloor) {
+                elevator.passengerList.total_weight_int -= p->weight_int;
+                elevator.passengerList.total_weight_dec -= p->weight_dec;
+                elevator.passengerList.total_cnt--;
+
+                list_del(temp);
+                kfree(p);
+            }
+        }
+        mutex_unlock(&elevator.mutex);
+    }
+}
+
+int find_next_possible_floor(void) {
+    int closest_floor_up = ELEVATOR_MAX_FLOOR + 1;
+    int closest_floor_down = -1;
+
+    struct list_head *temp;
+    Passenger *p;
+
+    // Passengers Inside
+    list_for_each(temp, &elevator.passengerList.list) {
+        p = list_entry(temp, Passenger, list);
+        if (p -> destination_floor > elevator.curFloor && p -> destination_floor < closest_floor_up) {
+            closest_floor_up = p -> destination_floor;
+        } else if (p -> destination_floor < elevator.curFloor && p -> destination_floor > closest_floor_down) {
+            closest_floor_down = p -> destination_floor;
+        }
+    }
+
+    // CHECKING WAITING PASSENGERS
+    list_for_each(temp, &elevator.passenger_queue.list) {
+        p = list_entry(temp, Passenger, list);
+        if (p -> start_floor > elevator.curFloor && p -> start_floor < closest_floor_up) {
+            closest_floor_up = p -> start_floor;
+        } else if (p -> start_floor < elevator.curFloor && p -> start_floor > closest_floor_down) {
+            closest_floor_down = p -> start_floor;
+        }
+    }
+
+    bool hasClosestFloorUp = (closest_floor_up != ELEVATOR_MAX_FLOOR + 1);
+    bool hasClosestFloorDown = (closest_floor_down != -1);
+    int next_floor = -1;
+
+    // NEXT FLOOR BASED ON STATE
+    if (elevator.state == UP && hasClosestFloorUp) {
+        next_floor = closest_floor_up;
+    } else if (elevator.state == DOWN && hasClosestFloorDown) {
+        next_floor = closest_floor_down;
+    } else if (elevator.state == IDLE) {
+        next_floor = hasClosestFloorUp ? closest_floor_up : (hasClosestFloorDown ? closest_floor_down : -1);
+    }
+
+    return next_floor;
 }
 
 //Our implementation of the issue_request syscall
@@ -138,7 +264,35 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
 
 //Our implementation of the stop_elevator syscall
 int custom_stop_elevator(void){
+
+    if(elevator.state == OFFLINE){
+        printk(KERN_INFO "Elevator already Offline!\n");
+        return 0;
+    }
+
+    if (mutex_lock_interruptible(&elevator.mutex) == 0){
+        elevator.state = OFFLINE; //setting offline state
+        unload_elevator();
+
+        while (elevator.passengerList.total_cnt != 0){
+            int next_floor = find_next_possible_floor();
+            if (next_floor != -1) {
+                elevator.curFloor = next_floor;
+                unload_elevator();
+                msleep(1000);
+            } else {
+                break;
+            }
+        }
+           
+        mutex_unlock(&elevator.mutex);
+        printk(KERN_INFO "Elevator Offline!\n");
+    } else {
+        printk(KERN_ALERT "Issue in locking elevator mutex! (Stopping)");
+    } 
+
     return 0;
+
 }
 
 //Implementation of the elevator algorithm
