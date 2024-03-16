@@ -151,13 +151,14 @@ int elevator_run(void *data){
 
 static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
-    char buf[10000];
-    int len = 0;
+    //char buf[10000];
 
-    len = sprintf(buf, "Elevator state: \n");     /* Add elevator state when implemented*/
-    len += sprintf(buf + len, "Current floor: %d\n", elevator.cur_floor);
-    len += sprintf(buf + len, "Current load: %d.%d\n", elevator.passengerList.total_weight_int, elevator.passengerList.total_weight_dec);
-    len += sprintf(buf + len, "Elevator status:");     /* Add elevator status (passenger types and destination floor) when implemented*/
+    char *buf = kmalloc(sizeof(char) * 1000, __GFP_RECLAIM);
+
+    snprintf(buf, sizeof(buf), "Elevator state: \n");     /* Add elevator state when implemented*/
+    snprintf(buf, sizeof(buf), "Current floor: %d\n", elevator.cur_floor);
+    snprintf(buf, sizeof(buf), "Current load: %d.%d\n", elevator.passengerList.total_weight_int, elevator.passengerList.total_weight_dec);
+    snprintf(buf, sizeof(buf), "Elevator status:");     /* Add elevator status (passenger types and destination floor) when implemented*/
 
     Passenger *pass;	//pointers to iterate through passenger list
     Passenger *pass2;
@@ -166,21 +167,21 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 	int passengerType = pass->id;
 	int passengerDest = pass->destFloor;	//Waiting for Edgar's commit that includes destination_floor
 
-	len += sprintf(buf + len, " %d%d", passengerType, passengerDest);
+	snprintf(buf, sizeof(buf), " %d%d", passengerType, passengerDest);
     }
 
-    len += sprintf(buf + len, "\n");
+    snprintf(buf, sizeof(buf), "\n");
 
     for(int i = 5; i > 0; i--){
         if(i == elevator.cur_floor) {
-            len += sprintf(buf + len, "[*] Floor %d:", i);
+            len += snprintf(buf + len, "[*] Floor %d:", i);
             /* Print waiting passengers type and destination floor after "[*] Floor cur_floor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
+	    snprintf(buf, sizeof(buf), " %d", elevator.passenger_queue.total_cnt);
 
         }else{
-            len += sprintf(buf + len, "[ ] Floor %d:", i);
+            snprintf(buf, sizeof(buf), "[ ] Floor %d:", i);
 	    /* Print waiting passengers type and destination floor after "[ ] Floor cur_floor:"*/
-	    len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
+	    snprintf(buf, sizeof(buf), " %d", elevator.passenger_queue.total_cnt);
 	}
 
 	list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
@@ -188,22 +189,22 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         int passengerDest = pass2->destFloor;
 
         if(passengerDest == i){
-			len += sprintf(buf + len, " %d%d", passengerType, passengerDest); 
+			snprintf(buf, sizeof(buf), " %d%d", passengerType, passengerDest); 
 		}
 	}
 
-	len += sprintf(buf + len, "\n");
+    snprintf(buf, sizeof(buf), "\n");
 
-    }
     // you can finish the rest.
 
     // not sure what else needs to be done here
 
-    len += sprintf(buf + len, "Number of passengers: %d\n", elevator.passengerList.total_cnt);
-    len += sprintf(buf + len, "Number of passengers waiting: %d\n", elevator.passenger_queue.total_cnt);
-    len += sprintf(buf + len, "Number of passengers serviced:\n");   /* Print passengers serviced once implemented"*/
+    snprintf(buf, sizeof(buf), "Number of passengers: %d\n", elevator.passengerList.total_cnt);
+    snprintf(buf, sizeof(buf), "Number of passengers waiting: %d\n", elevator.passenger_queue.total_cnt);
+    snprintf(buf, sizeof(buf), "Number of passengers serviced:\n");   /* Print passengers serviced once implemented"*/
 
-    return simple_read_from_buffer(ubuf, count, ppos, buf, len);
+    kfree(buf);
+    return 0;
 }
 
 static ssize_t elevator_write(struct file* file, const char __user* ubuf, size_t count, loff_t* ppos) {
