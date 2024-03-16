@@ -207,15 +207,29 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 }
 
 static ssize_t elevator_write(struct file* file, const char __user* ubuf, size_t count, loff_t* ppos) {
-    char buf[100];
+    char *buf;
 
-    if (*ppos > 0 || count > 100)
-        return -EFAULT;
+    buf = kmalloc(count + 1, GFP_KERNEL);
+    if(!buf){
+	printk(KERN_ERR "memory allocation failed in elevator_write()\n");
+	return -ENOMEM;
+    }
 
-    if (copy_from_user(buf, ubuf, count))
+    if (*ppos > 0 || count > 100){
+	kfree(buf);
         return -EFAULT;
+    }
+
+    if (copy_from_user(buf, ubuf, count)){
+	kfree(buf);
+        return -EFAULT;
+    }
+
+    buf[count + 1] = '\0';	//this might need to change to buf[count] = '\0';
 
     printk(KERN_INFO "Data written to /proc/elevator: %s\n", buf); //test message for proc entry
+
+    kfree(buf);
 
     *ppos = count;
     return count;
