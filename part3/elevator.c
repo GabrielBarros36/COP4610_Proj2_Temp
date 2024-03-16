@@ -45,8 +45,8 @@ static struct proc_dir_entry* elevator_entry;
 struct thread_parameter {
 
     int state;
-    int curFloor;
-    int destFloor;
+    int start_floor;
+    int dest_floor;
     struct task_struct *kthread;
     struct mutex mutex;
 
@@ -124,7 +124,7 @@ int load_elevator(void){
         list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
             p = list_entry(temp, Passenger, list);
 
-            if (p -> start_floor == elevator.curFloor &&
+            if (p -> start_floor == elevator.cur_floor &&
                 elevator.passengerList.total_cnt < ELEVATOR_LIMIT &&
                 (elevator.passengerList.total_weight_int + p -> weight_int) +
                 (elevator.passengerList.total_weight_dec + p -> weight_dec) / 10 <= WEIGHT_LIMIT) {
@@ -153,7 +153,7 @@ void unload_elevator(void) {
         list_for_each_safe(temp, dummy, &elevator.passengerList.list) {
             p = list_entry(temp, Passenger, list);
 
-            if(p->destination_floor == elevator.curFloor) {
+            if(p->destination_floor == elevator.cur_floor) {
                 elevator.passengerList.total_weight_int -= p->weight_int;
                 elevator.passengerList.total_weight_dec -= p->weight_dec;
                 elevator.passengerList.total_cnt--;
@@ -176,9 +176,9 @@ int find_next_possible_floor(void) {
     // Passengers Inside
     list_for_each(temp, &elevator.passengerList.list) {
         p = list_entry(temp, Passenger, list);
-        if (p -> destination_floor > elevator.curFloor && p -> destination_floor < closest_floor_up) {
+        if (p -> destination_floor > elevator.cur_floor && p -> destination_floor < closest_floor_up) {
             closest_floor_up = p -> destination_floor;
-        } else if (p -> destination_floor < elevator.curFloor && p -> destination_floor > closest_floor_down) {
+        } else if (p -> destination_floor < elevator.cur_floor && p -> destination_floor > closest_floor_down) {
             closest_floor_down = p -> destination_floor;
         }
     }
@@ -186,9 +186,9 @@ int find_next_possible_floor(void) {
     // CHECKING WAITING PASSENGERS
     list_for_each(temp, &elevator.passenger_queue.list) {
         p = list_entry(temp, Passenger, list);
-        if (p -> start_floor > elevator.curFloor && p -> start_floor < closest_floor_up) {
+        if (p -> start_floor > elevator.cur_floor && p -> start_floor < closest_floor_up) {
             closest_floor_up = p -> start_floor;
-        } else if (p -> start_floor < elevator.curFloor && p -> start_floor > closest_floor_down) {
+        } else if (p -> start_floor < elevator.cur_floor && p -> start_floor > closest_floor_down) {
             closest_floor_down = p -> start_floor;
         }
     }
@@ -277,7 +277,7 @@ int custom_stop_elevator(void){
         while (elevator.passengerList.total_cnt != 0){
             int next_floor = find_next_possible_floor();
             if (next_floor != -1) {
-                elevator.curFloor = next_floor;
+                elevator.cur_floor = next_floor;
                 unload_elevator();
                 msleep(1000);
             } else {
@@ -298,7 +298,64 @@ int custom_stop_elevator(void){
 //Implementation of the elevator algorithm
 int elevator_run(void *data){
 
-    //Elevator algorithm goes here
+    struct thread_parameter *elevator = data;
+
+    printk(KERN_INFO "Elevator thread started.\n");
+
+    while (!kthread_should_stop()) {
+        if (mutex_lock_interruptible(&elevator->mutex) != 0) {
+            continue;
+        }
+
+        switch (elevator->state) {
+            case IDLE:
+                // Check for passengers or decide the next move
+                if (elevator->passenger_queue.total_cnt > 0 || elevator->passengerList.total_cnt > 0) {
+                    elevator->state = LOADING;
+                }
+                break;
+
+            case LOADING:
+                load_elevator();
+                unload_elevator();
+
+                if (elevator->passengerList.total_cnt > 0) {
+                    int next_floor = find_next_possible_floor();
+                    if (next_floor != -1) {
+                        elevator->destFloor = next_floor;
+                        elevator->state = (next_floor > elevator->curFloor) ? UP : DOWN;
+                    }
+                } else {
+                    elevator->state = IDLE;
+                }
+                break;
+
+            case UP:
+            case DOWN:
+                // Move the elevator to the next floor
+                if (elevator->curFloor != elevator->destFloor) {
+                    // Movement
+                    msleep(1000); // 1 second
+
+                    elevator->curFloor += (elevator->state == UP) ? 1 : -1;
+                    printk(KERN_INFO "Elevator moved to floor %d.\n", elevator->curFloor);
+                }
+
+                // Check
+                if (elevator->curFloor == elevator->destFloor) {
+                    elevator->state = LOADING;
+                }
+                break;
+
+            default:
+                printk(KERN_WARNING "Elevator encountered an unhandled state.\n");
+                break;
+        }
+
+        mutex_unlock(&elevator->mutex);
+    }
+
+    printk(KERN_INFO "Elevator thread stopping.\n");
     return 0;
 
 }
