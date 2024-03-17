@@ -77,6 +77,7 @@ struct thread_parameter elevator;
 typedef struct{
     int curFloor;
     int destFloor;
+    int startFloor;
     int id;
     int weight_int;
     int weight_dec;
@@ -126,7 +127,7 @@ void load_elevator(void){
         list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
             p = list_entry(temp, Passenger, list);
 
-            if (p -> start_floor == elevator.cur_floor &&
+            if (p -> startFloor == elevator.cur_floor &&
                 elevator.passengerList.total_cnt < ELEVATOR_LIMIT &&
                 (elevator.passengerList.total_weight_int + p -> weight_int) +
                 (elevator.passengerList.total_weight_dec + p -> weight_dec) / 10 <= WEIGHT_LIMIT) {
@@ -138,7 +139,7 @@ void load_elevator(void){
 
                 list_move_tail(temp, &elevator.passengerList.list);
 
-                printk(KERN_INFO "Passenger Sucessfully Loaded, Start Floor: %d to Destination Floor %d\n", p -> start_floor, p -> destination_floor);
+                printk(KERN_INFO "Passenger Sucessfully Loaded, Start Floor: %d to Destination Floor %d\n", p -> startFloor, p -> destFloor);
             }
         }
         mutex_unlock(&elevator.mutex);
@@ -155,7 +156,7 @@ void unload_elevator(void) {
         list_for_each_safe(temp, dummy, &elevator.passengerList.list) {
             p = list_entry(temp, Passenger, list);
 
-            if(p->destination_floor == elevator.cur_floor) {
+            if(p->destFloor == elevator.cur_floor) {
                 elevator.passengerList.total_weight_int -= p->weight_int;
                 elevator.passengerList.total_weight_dec -= p->weight_dec;
                 elevator.passengerList.total_cnt--;
@@ -178,8 +179,8 @@ int find_next_possible_floor(void) {
     // Passengers Inside
     list_for_each(temp, &elevator.passengerList.list) {
         p = list_entry(temp, Passenger, list);
-        if (p -> destFloor > elevator.cur_floor && p -> destination_floor < closest_floor_up) {
-            closest_floor_up = p -> destination_floor;
+        if (p -> destFloor > elevator.cur_floor && p -> destFloor < closest_floor_up) {
+            closest_floor_up = p -> destFloor;
         } else if (p -> destFloor < elevator.cur_floor && p -> destFloor > closest_floor_down) {
             closest_floor_down = p -> destFloor;
         }
@@ -188,10 +189,10 @@ int find_next_possible_floor(void) {
     // CHECKING WAITING PASSENGERS
     list_for_each(temp, &elevator.passenger_queue.list) {
         p = list_entry(temp, Passenger, list);
-        if (p -> start_floor > elevator.cur_floor && p -> start_floor < closest_floor_up) {
-            closest_floor_up = p -> start_floor;
-        } else if (p -> start_floor < elevator.cur_floor && p -> start_floor > closest_floor_down) {
-            closest_floor_down = p -> start_floor;
+        if (p -> startFloor > elevator.cur_floor && p -> startFloor < closest_floor_up) {
+            closest_floor_up = p -> startFloor;
+        } else if (p -> startFloor < elevator.cur_floor && p -> startFloor > closest_floor_down) {
+            closest_floor_down = p -> starFloor;
         }
     }
 
@@ -325,7 +326,7 @@ int elevator_run(void *data){
                     int next_floor = find_next_possible_floor();
                     if (next_floor != -1) {
                         elevator->dest_floor = next_floor;
-                        elevator->state = (next_floor > elevator->curFloor) ? UP : DOWN;
+                        elevator->state = (next_floor > elevator->cur_floor) ? UP : DOWN;
                     }
                 } else {
                     elevator->state = IDLE;
@@ -431,7 +432,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         Passenger *pass2;
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
 
-	    if(pass2->start_floor == i) {
+	    if(pass2->starFloor == i) {
 
 		if(pass2->id >= 0 && pass2->id <= 3) {
 			char passengerType = passengerTypes[pass->id];
