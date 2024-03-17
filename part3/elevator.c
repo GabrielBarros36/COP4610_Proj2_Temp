@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
+#include <stdio.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
@@ -192,7 +193,7 @@ int find_next_possible_floor(void) {
         if (p -> startFloor > elevator.cur_floor && p -> startFloor < closest_floor_up) {
             closest_floor_up = p -> startFloor;
         } else if (p -> startFloor < elevator.cur_floor && p -> startFloor > closest_floor_down) {
-            closest_floor_down = p -> starFloor;
+            closest_floor_down = p -> startFloor;
         }
     }
 
@@ -341,7 +342,7 @@ int elevator_run(void *data){
                     msleep(1000); // 1 second
 
                     elevator->cur_floor += (elevator->state == UP) ? 1 : -1;
-                    printk(KERN_INFO "Elevator moved to floor %d.\n", elevator->curFloor);
+                    printk(KERN_INFO "Elevator moved to floor %d.\n", elevator->cur_floor);
                 }
 
                 // Check
@@ -432,7 +433,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         Passenger *pass2;
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
 
-	    if(pass2->starFloor == i) {
+	    if(pass2->startFloor == i) {
 
 		if(pass2->id >= 0 && pass2->id <= 3) {
 			char passengerType = passengerTypes[pass->id];
@@ -442,7 +443,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
                 int passengerDest = pass2->destFloor;
 
-		len += sprintf(buf + len, " %s%d ", passengerType, passengerDest)
+		len += sprintf(buf + len, " %s%d ", passengerType, passengerDest);
 	    }
         }
 
