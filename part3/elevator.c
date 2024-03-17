@@ -368,18 +368,48 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     int len = 0;
 
-    len = sprintf(buf, "Elevator state: \n");     /* Add elevator state when implemented */
+    char* state;
+
+    switch(elevator.state){
+	case OFFLINE:
+	    state = "OFFLINE";
+	    break;
+        case LOADING:
+            state = "LOADING";
+            break;
+	case UP: 
+	    state = "UP";
+	    break;
+	case DOWN:
+	    state = "DOWN";
+	    break;
+        case IDLE:
+	    state = "IDLE";
+	    break;
+	default:
+	    printf("Error: Unknown Elevator State");	
+    }
+
+    len = sprintf(buf, "Elevator state: %s\n", state);     /* Add elevator state when implemented */
     len += sprintf(buf + len, "Current floor: %d\n", elevator.cur_floor);
     len += sprintf(buf + len, "Current load: %d.%d\n", elevator.passengerList.total_weight_int, elevator.passengerList.total_weight_dec);
     len += sprintf(buf + len, "Elevator status:");     /* Add elevator status (passenger types and destination floor) when implemented */
 
     Passenger *pass;    //pointers to iterate through passenger list
 
+    const char *passengerTypes[] = {"V", "P", "L", "B"}; 
+
     list_for_each_entry(pass, &elevator.passengerList.list, list) {    //Print elevator status
-        int passengerType = pass->id;
+
+        if(pass->id >= 0 && pass->id <= 3) {
+        	char passengerType = passengerTypes[pass->id];
+        }else{
+                printf(KERN_WARNING "Unknown Passenger Type");
+        }
+
         int passengerDest = pass->destFloor;    //Waiting for Edgar's commit that includes destination_floor
 
-        len += sprintf(buf + len, " %d%d", passengerType, passengerDest);
+        len += sprintf(buf + len, " %s%d", passengerType, passengerDest);
     }
 
     len += sprintf(buf + len, "\n");
@@ -394,16 +424,23 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
             len += sprintf(buf + len, "[ ] Floor %d:", i);
             /* Print waiting passengers type and destination floor after "[ ] Floor cur_floor:"*/
             len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
-        }
+    	}
 
         Passenger *pass2;
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
-            int passengerType = pass2->id;
-            int passengerDest = pass2->destFloor;
 
-            if(passengerDest == i){
-                len += sprintf(buf + len, " %d%d", passengerType, passengerDest); 
-            }
+	    if(pass2->start_floor == i) {
+
+		if(pass2->id >= 0 && pass2->id <= 3) {
+			char passengerType = passengerTypes[pass->id];
+		}else{
+			printf(KERN_WARNING "Unknown Passenger Type");
+		}
+
+                int passengerDest = pass2->destFloor;
+
+		len += sprintf(buf + len, " %s%d ", passengerType, passengerDest)
+	    }
         }
 
         len += sprintf(buf + len, "\n");
@@ -439,7 +476,7 @@ static ssize_t elevator_write(struct file* file, const char __user* ubuf, size_t
         return -EFAULT;
     }
 
-    buf[count + 1] = '\0';	//this might need to change to buf[count] = '\0';
+    buf[count] = '\0';	
 
     printk(KERN_INFO "Data written to /proc/elevator: %s\n", buf); //test message for proc entry
 
