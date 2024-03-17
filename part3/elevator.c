@@ -436,7 +436,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 	        if(pass2->startFloor == i) {
                 char passengerType;
 		        if(pass2->id >= 0 && pass2->id <= 3) {
-                    int index = pass->id
+                    int index = pass->id;
 		        	passengerType = passengerTypes[index];
 		        }else{
 		    	    printk(KERN_WARNING "Unknown Passenger Type");
