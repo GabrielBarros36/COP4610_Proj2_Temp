@@ -12,6 +12,7 @@
 #include <linux/buffer_head.h>
 #include <linux/slab.h>
 #include <asm/uaccess.h>
+#include <linux/delay.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
@@ -46,6 +47,7 @@ struct thread_parameter {
 
     int state;
     int start_floor;
+    int cur_floor;
     int dest_floor;
     struct task_struct *kthread;
     struct mutex mutex;
@@ -91,7 +93,7 @@ int custom_start_elevator(void){
         
     if (mutex_lock_interruptible(&elevator.mutex) == 0){
         elevator.state = IDLE; //setting idle state
-        elevator.curFloor = 1;
+        elevator.cur_floor = 1;
 
         INIT_LIST_HEAD(&elevator.passengerList.list); //Initializing passenger list and setting to 0
         elevator.passengerList.total_cnt = 0;
@@ -116,7 +118,7 @@ int custom_start_elevator(void){
 }
 
 //checks that the count and weight is not exceeded
-int load_elevator(void){
+void load_elevator(void){
     struct list_head *temp, *dummy;
     Passenger *p;
 
@@ -176,10 +178,10 @@ int find_next_possible_floor(void) {
     // Passengers Inside
     list_for_each(temp, &elevator.passengerList.list) {
         p = list_entry(temp, Passenger, list);
-        if (p -> destination_floor > elevator.cur_floor && p -> destination_floor < closest_floor_up) {
+        if (p -> destFloor > elevator.cur_floor && p -> destination_floor < closest_floor_up) {
             closest_floor_up = p -> destination_floor;
-        } else if (p -> destination_floor < elevator.cur_floor && p -> destination_floor > closest_floor_down) {
-            closest_floor_down = p -> destination_floor;
+        } else if (p -> destFloor < elevator.cur_floor && p -> destFloor > closest_floor_down) {
+            closest_floor_down = p -> destFloor;
         }
     }
 
@@ -322,7 +324,7 @@ int elevator_run(void *data){
                 if (elevator->passengerList.total_cnt > 0) {
                     int next_floor = find_next_possible_floor();
                     if (next_floor != -1) {
-                        elevator->destFloor = next_floor;
+                        elevator->dest_floor = next_floor;
                         elevator->state = (next_floor > elevator->curFloor) ? UP : DOWN;
                     }
                 } else {
@@ -333,16 +335,16 @@ int elevator_run(void *data){
             case UP:
             case DOWN:
                 // Move the elevator to the next floor
-                if (elevator->curFloor != elevator->destFloor) {
+                if (elevator->cur_floor != elevator->dest_floor) {
                     // Movement
                     msleep(1000); // 1 second
 
-                    elevator->curFloor += (elevator->state == UP) ? 1 : -1;
+                    elevator->cur_floor += (elevator->state == UP) ? 1 : -1;
                     printk(KERN_INFO "Elevator moved to floor %d.\n", elevator->curFloor);
                 }
 
                 // Check
-                if (elevator->curFloor == elevator->destFloor) {
+                if (elevator->cur_floor == elevator->dest_floor) {
                     elevator->state = LOADING;
                 }
                 break;
