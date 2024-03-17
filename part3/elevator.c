@@ -433,18 +433,19 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         Passenger *pass2;
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
 
-	    if(pass2->startFloor == i) {
+	        if(pass2->startFloor == i) {
 
-		if(pass2->id >= 0 && pass2->id <= 3) {
-			char passengerType = passengerTypes[pass->id];
-		}else{
-			printk(KERN_WARNING "Unknown Passenger Type");
-		}
+		        if(pass2->id >= 0 && pass2->id <= 3) {
+                    int index = pass->id
+		        	char passengerType = passengerTypes[index];
+		        }else{
+		    	    printk(KERN_WARNING "Unknown Passenger Type");
+		        }
 
                 int passengerDest = pass2->destFloor;
 
-		len += sprintf(buf + len, " %s%d ", passengerType, passengerDest);
-	    }
+		        len += sprintf(buf + len, " %s%d ", passengerType, passengerDest);
+	        }   
         }
 
         len += sprintf(buf + len, "\n");
