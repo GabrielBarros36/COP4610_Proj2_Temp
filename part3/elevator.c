@@ -13,7 +13,6 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
-#include <stdint.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
@@ -406,7 +405,8 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     list_for_each_entry(pass, &elevator.passengerList.list, list) {    //Print elevator status
 
         if(pass->id >= 0 && pass->id <= 3) {
-        	char passengerType = passengerTypes[(int)(intptr_t)pass->id];
+            int index = pass->id;
+        	char passengerType = passengerTypes[index];
         }else{
                 printk(KERN_WARNING "Unknown Passenger Type");
         }
