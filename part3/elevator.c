@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
+#include <stdint.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
@@ -371,15 +372,15 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     int len = 0;
 
-    char state[15];
+    char* state;
 
     switch(elevator.state){
 	case OFFLINE:
 	    state = "OFFLINE";
 	    break;
-        case LOADING:
-            state = "LOADING";
-            break;
+    case LOADING:
+        state = "LOADING";
+        break;
 	case UP: 
 	    state = "UP";
 	    break;
@@ -405,7 +406,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     list_for_each_entry(pass, &elevator.passengerList.list, list) {    //Print elevator status
 
         if(pass->id >= 0 && pass->id <= 3) {
-        	char passengerType = passengerTypes[pass->id];
+        	char passengerType = passengerTypes[(int)(intptr_t)pass->id];
         }else{
                 printk(KERN_WARNING "Unknown Passenger Type");
         }
