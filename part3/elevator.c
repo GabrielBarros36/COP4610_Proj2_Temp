@@ -13,7 +13,6 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
-#include <stdio.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("cop4610t");
@@ -372,7 +371,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     int len = 0;
 
-    char* state;
+    char state[15];
 
     switch(elevator.state){
 	case OFFLINE:
@@ -391,7 +390,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 	    state = "IDLE";
 	    break;
 	default:
-	    printf("Error: Unknown Elevator State");	
+	    printk(KERN_WARNING "Error: Unknown Elevator State");	
     }
 
     len = sprintf(buf, "Elevator state: %s\n", state);     /* Add elevator state when implemented */
@@ -408,7 +407,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         if(pass->id >= 0 && pass->id <= 3) {
         	char passengerType = passengerTypes[pass->id];
         }else{
-                printf(KERN_WARNING "Unknown Passenger Type");
+                printk(KERN_WARNING "Unknown Passenger Type");
         }
 
         int passengerDest = pass->destFloor;    //Waiting for Edgar's commit that includes destination_floor
@@ -438,7 +437,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 		if(pass2->id >= 0 && pass2->id <= 3) {
 			char passengerType = passengerTypes[pass->id];
 		}else{
-			printf(KERN_WARNING "Unknown Passenger Type");
+			printk(KERN_WARNING "Unknown Passenger Type");
 		}
 
                 int passengerDest = pass2->destFloor;
