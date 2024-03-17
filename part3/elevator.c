@@ -403,10 +403,10 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     const char *passengerTypes[] = {"V", "P", "L", "B"}; 
 
     list_for_each_entry(pass, &elevator.passengerList.list, list) {    //Print elevator status
-
+        char passengerType;
         if(pass->id >= 0 && pass->id <= 3) {
             int index = pass->id;
-        	char passengerType = passengerTypes[index];
+        	passengerType = passengerTypes[index];
         }else{
                 printk(KERN_WARNING "Unknown Passenger Type");
         }
@@ -434,10 +434,10 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
 
 	        if(pass2->startFloor == i) {
-
+                char passengerType;
 		        if(pass2->id >= 0 && pass2->id <= 3) {
                     int index = pass->id
-		        	char passengerType = passengerTypes[index];
+		        	passengerType = passengerTypes[index];
 		        }else{
 		    	    printk(KERN_WARNING "Unknown Passenger Type");
 		        }
