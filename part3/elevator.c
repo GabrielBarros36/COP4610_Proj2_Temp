@@ -421,7 +421,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
         int passengerDest = pass->destFloor;    //Waiting for Edgar's commit that includes destination_floor
 
-        len += sprintf(buf + len, " %s%d", passengerType, passengerDest);
+        len += sprintf(buf + len, " %c%d", passengerType, passengerDest);
     }
 
     len += sprintf(buf + len, "\n");
