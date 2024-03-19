@@ -162,6 +162,8 @@ void unload_elevator(void) {
 
                 list_del(temp);
                 kfree(p);
+
+                elevator.passengerList.total_serviced++;    //incriment total_serviced
             }
         }
         mutex_unlock(&elevator.mutex);
@@ -377,7 +379,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     int len = 0;
 
-    char* state;
+    char* state = "";
 
     switch(elevator.state){
 	case OFFLINE:
@@ -428,15 +430,19 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
         if(i == elevator.cur_floor) {
             len += sprintf(buf + len, "[*] Floor %d:", i);
             /*Prints: "[*] Floor cur_floor:"*/
-            len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
-
         } else {
             len += sprintf(buf + len, "[ ] Floor %d:", i);
             /*Prints: "[ ] Floor cur_floor:"*/
-            len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
     	}
 
-        Passenger *pass2;
+        Passenger *pass2, *temp;
+        list_for_each_entry(temp, &elevator.passenger_queue.list, list){    //Calculate waiting_passengers per floor
+            if(temp->startFloor == i)
+                elevator.passenger_queue.waiting_passengers[i-1]++;
+        }
+
+        len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i-1]);
+
         list_for_each_entry(pass2, &elevator.passenger_queue.list, list) {
 
 	        if(pass2->startFloor == i) {
@@ -449,7 +455,6 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 		        }
 
                 int passengerDest = pass2->destFloor;
-
 		        len += sprintf(buf + len, " %s%d ", passengerType, passengerDest);
 	        }   
         }
@@ -460,7 +465,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     len += sprintf(buf + len, "Number of passengers: %d\n", elevator.passengerList.total_cnt);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", elevator.passenger_queue.total_cnt);
-    len += sprintf(buf + len, "Number of passengers serviced:\n");   /* Print passengers serviced once implemented */
+    len += sprintf(buf + len, "Number of passengers serviced: %d\n", elevator.total_serviced);   /* Print passengers serviced once implemented */
 
     ssize_t result = simple_read_from_buffer(ubuf, count, ppos, buf, len);
     kfree(buf); // Free the allocated memory
