@@ -408,7 +408,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     Passenger *pass;    //pointers to iterate through passenger list
 
-    const char *passengerTypes[] = {"V", "P", "L", "B"}; 
+    char passengerTypes[4] = {'V', 'P', 'L', 'B'}; 
 
     list_for_each_entry(pass, &elevator.passengerList.list, list) {    //Print elevator status
         char passengerType;
@@ -465,7 +465,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 
     len += sprintf(buf + len, "Number of passengers: %d\n", elevator.passengerList.total_cnt);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", elevator.passenger_queue.total_cnt);
-    len += sprintf(buf + len, "Number of passengers serviced: %d\n", elevator.total_serviced);   /* Print passengers serviced once implemented */
+    len += sprintf(buf + len, "Number of passengers serviced: %d\n", elevator.passengerList.total_serviced);   /* Print passengers serviced once implemented */
 
     ssize_t result = simple_read_from_buffer(ubuf, count, ppos, buf, len);
     kfree(buf); // Free the allocated memory
