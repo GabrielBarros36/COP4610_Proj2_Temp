@@ -455,7 +455,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
 		        }
 
                 int passengerDest = pass2->destFloor;
-		        len += sprintf(buf + len, " %s%d ", passengerType, passengerDest);
+		        len += sprintf(buf + len, " %c%d ", passengerType, passengerDest);
 	        }   
         }
 
