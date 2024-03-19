@@ -46,7 +46,6 @@ static struct proc_dir_entry* elevator_entry;
 struct thread_parameter {
 
     int state;
-    int start_floor;
     int cur_floor;
     int dest_floor;
     struct task_struct *kthread;
@@ -227,6 +226,7 @@ int custom_issue_request(int passengerType, int startFloor, int destinationFloor
 
     a->id = passengerType;
     a->curFloor = startFloor;
+    a->startFloor = startFloor;
     a->destFloor = destinationFloor;
 
     switch(passengerType){
@@ -341,6 +341,12 @@ int elevator_run(void *data){
                     msleep(1000); // 1 second
 
                     elevator->cur_floor += (elevator->state == UP) ? 1 : -1;
+                   
+                    /*Update elevator.passengerList.curFloor*/
+                    Passenger *pass;
+                    list_for_each_entry(pass, &elevator->passengerList.list, list){
+                        (elevator->state == UP) ? ++pass->curFloor : --pass->curFloor;
+                    }
                     printk(KERN_INFO "Elevator moved to floor %d.\n", elevator->cur_floor);
                 }
 
@@ -421,12 +427,12 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     for(int i = 5; i > 0; i--){
         if(i == elevator.cur_floor) {
             len += sprintf(buf + len, "[*] Floor %d:", i);
-            /* Print waiting passengers type and destination floor after "[*] Floor cur_floor:"*/
+            /*Prints: "[*] Floor cur_floor:"*/
             len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
 
         } else {
             len += sprintf(buf + len, "[ ] Floor %d:", i);
-            /* Print waiting passengers type and destination floor after "[ ] Floor cur_floor:"*/
+            /*Prints: "[ ] Floor cur_floor:"*/
             len += sprintf(buf + len, " %d", elevator.passenger_queue.total_cnt);
     	}
 
