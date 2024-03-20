@@ -277,6 +277,8 @@ int custom_stop_elevator(void){
 
     if (mutex_lock_interruptible(&elevator.mutex) == 0){
         elevator.state = OFFLINE; //setting offline state
+        mutex_unlock(&elevator.mutex);
+
         unload_elevator();
 
         while (elevator.passengerList.total_cnt != 0){
@@ -290,7 +292,6 @@ int custom_stop_elevator(void){
             }
         }
            
-        mutex_unlock(&elevator.mutex);
         printk(KERN_INFO "Elevator Offline!\n");
     } else {
         printk(KERN_ALERT "Issue in locking elevator mutex! (Stopping)");
@@ -524,6 +525,11 @@ void thread_init_parameter(struct thread_parameter *param){
 
     //thread operations
     param->kthread = kthread_run(elevator_run, param, "running elevator thread");
+
+    if(IS_ERR(param->kthread)){
+        printk(KERN_WARNING "Error spawning thread (thread_init_parameter)")
+        return;
+    }
     
 }
 
@@ -546,7 +552,7 @@ static int __init elevator_init(void){
     //Thread operations
     thread_init_parameter(&elevator);
     if (IS_ERR(elevator.kthread)) {
-		printk(KERN_WARNING "error spawning thread");
+		printk(KERN_WARNING "Error spawning thread (elevator_init)");
 		remove_proc_entry(ENTRY_NAME, NULL);
 		return PTR_ERR(elevator.kthread);
 	}
@@ -568,10 +574,6 @@ static void __exit elevator_exit(void){
 	STUB_issue_request = NULL;
 	STUB_stop_elevator = NULL;
 }
-
-EXPORT_SYMBOL(custom_start_elevator);
-EXPORT_SYMBOL(custom_issue_request);
-EXPORT_SYMBOL(custom_stop_elevator);
 
 module_init(elevator_init);
 module_exit(elevator_exit);
