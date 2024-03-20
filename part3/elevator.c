@@ -556,7 +556,10 @@ static int __init elevator_init(void){
 
 static void __exit elevator_exit(void){
 
-    kthread_stop(elevator.kthread);
+    if(elevator.kthread) {
+        kthread_stop(elevator.kthread);
+        elevator.kthread = NULL;
+    }
 
     //proc file operation below
     proc_remove(elevator_entry);
