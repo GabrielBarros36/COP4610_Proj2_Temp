@@ -287,7 +287,7 @@ int custom_stop_elevator(void){
             int next_floor = find_next_possible_floor();
             if (next_floor != -1) {
                 elevator.cur_floor = next_floor;
-                mutex_unlock(&elevator.mutex)
+                mutex_unlock(&elevator.mutex);
                 unload_elevator();
                 msleep(1000);
             } else {
