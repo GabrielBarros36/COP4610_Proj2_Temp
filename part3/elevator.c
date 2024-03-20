@@ -566,5 +566,9 @@ static void __exit elevator_exit(void){
 	STUB_stop_elevator = NULL;
 }
 
+EXPORT_SYMBOL(custom_start_elevator);
+EXPORT_SYMBOL(custom_issue_request);
+EXPORT_SYMBOL(custom_stop_elevator);
+
 module_init(elevator_init);
 module_exit(elevator_exit);
