@@ -187,13 +187,15 @@ int find_next_possible_floor(void) {
         }
     }
 
-    // CHECKING WAITING PASSENGERS
-    list_for_each(temp, &elevator.passenger_queue.list) {
-        p = list_entry(temp, Passenger, list);
-        if (p -> startFloor > elevator.cur_floor && p -> startFloor < closest_floor_up) {
-            closest_floor_up = p -> startFloor;
-        } else if (p -> startFloor < elevator.cur_floor && p -> startFloor > closest_floor_down) {
-            closest_floor_down = p -> startFloor;
+        // CHECKING WAITING PASSENGERS
+    if(elevator.state != OFFLINE){
+        list_for_each(temp, &elevator.passenger_queue.list) {               //changed to only allow waiting passengers if state is not offline
+            p = list_entry(temp, Passenger, list);
+            if (p -> startFloor > elevator.cur_floor && p -> startFloor < closest_floor_up) {
+                closest_floor_up = p -> startFloor;
+            } else if (p -> startFloor < elevator.cur_floor && p -> startFloor > closest_floor_down) {
+                closest_floor_down = p -> startFloor;
+            }
         }
     }
 
@@ -285,6 +287,7 @@ int custom_stop_elevator(void){
             int next_floor = find_next_possible_floor();
             if (next_floor != -1) {
                 elevator.cur_floor = next_floor;
+                mutex_unlock(&elevator.mutex)
                 unload_elevator();
                 msleep(1000);
             } else {
