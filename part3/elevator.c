@@ -423,7 +423,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
                 printk(KERN_WARNING "Unknown Passenger Type");
         }
 
-        int passengerDest = pass->destFloor;    //Waiting for Edgar's commit that includes destination_floor
+        int passengerDest = pass->destFloor;    
 
         len += sprintf(buf + len, " %c%d", passengerType, passengerDest);
     }
@@ -440,9 +440,12 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     	}
 
         Passenger *pass2, *temp;
+        int perFloor = 0;
         list_for_each_entry(temp, &elevator.passenger_queue.list, list){    //Calculate waiting_passengers per floor
-            if(temp->startFloor == i)
-                elevator.passenger_queue.waiting_passengers[i-1]++;
+            if(temp->startFloor == i){
+                 perFloor++; 
+            }
+                elevator.passenger_queue.waiting_passengers[i-1] = perFloor;
         }
 
         len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i-1]);
