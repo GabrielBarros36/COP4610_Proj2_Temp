@@ -527,7 +527,7 @@ void thread_init_parameter(struct thread_parameter *param){
     param->kthread = kthread_run(elevator_run, param, "running elevator thread");
 
     if(IS_ERR(param->kthread)){
-        printk(KERN_WARNING "Error spawning thread (thread_init_parameter)")
+        printk(KERN_WARNING "Error spawning thread (thread_init_parameter)");
         return;
     }
     
