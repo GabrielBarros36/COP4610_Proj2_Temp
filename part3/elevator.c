@@ -387,23 +387,23 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     char* state = "";
 
     switch(elevator.state){
-	case OFFLINE:
-	    state = "OFFLINE";
-	    break;
-    case LOADING:
-        state = "LOADING";
-        break;
-	case UP: 
-	    state = "UP";
-	    break;
-	case DOWN:
-	    state = "DOWN";
-	    break;
+        case OFFLINE:
+            state = "OFFLINE";
+            break;
+        case LOADING:
+            state = "LOADING";
+            break;
+        case UP: 
+            state = "UP";
+            break;
+        case DOWN:
+            state = "DOWN";
+            break;
         case IDLE:
-	    state = "IDLE";
-	    break;
-	default:
-	    printk(KERN_WARNING "Error: Unknown Elevator State");	
+            state = "IDLE";
+            break;
+        default:
+            printk(KERN_WARNING "Error: Unknown Elevator State");	
     }
 
     len = sprintf(buf, "Elevator state: %s\n", state);     /* Add elevator state when implemented */
@@ -528,6 +528,7 @@ void thread_init_parameter(struct thread_parameter *param){
     param->passengerList.total_weight_int = 0;
     param->passengerList.total_weight_dec = 0;
     param->passengerList.total_serviced = 0;
+    param->state = OFFLINE;
     INIT_LIST_HEAD(&param->passengerList.list);
 
     //thread operations
