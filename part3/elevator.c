@@ -528,7 +528,6 @@ void thread_init_parameter(struct thread_parameter *param){
     param->passengerList.total_weight_int = 0;
     param->passengerList.total_weight_dec = 0;
     param->passengerList.total_serviced = 0;
-    param->state = OFFLINE;
     INIT_LIST_HEAD(&param->passengerList.list);
 
     //thread operations
@@ -564,6 +563,8 @@ static int __init elevator_init(void){
 		remove_proc_entry(ENTRY_NAME, NULL);
 		return PTR_ERR(elevator.kthread);
 	}
+
+    elevator.state = OFFLINE;
 
     return 0;
 }
