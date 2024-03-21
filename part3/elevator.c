@@ -478,7 +478,7 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
                     int index = pass->id;
 		        	passengerType = passengerTypes[index];
 		        }else{
-		    	    printk(KERN_WARNING "Unknown Passenger Type");
+		    	    passengerType = 'WRONG';
 		        }
 
                 int passengerDest = pass2->destFloor;
