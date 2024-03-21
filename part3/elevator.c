@@ -278,7 +278,7 @@ int custom_issue_request(int startFloor, int destinationFloor, int passengerType
     //Add passenger to end of queue of waiting passengers
     list_add_tail(&a->list, &elevator.passenger_queue.list);
     elevator.passenger_queue.total_cnt++;
-    elevator.passenger_queue.waiting_passengers[elevator.startFloor - 1]++;
+    elevator.passenger_queue.waiting_passengers[startFloor - 1]++;
 
     return 0;
 }
