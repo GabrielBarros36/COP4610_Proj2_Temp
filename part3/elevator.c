@@ -122,6 +122,11 @@ void load_elevator(void){
     struct list_head *temp, *dummy;
     Passenger *p;
 
+    if(mutex_trylock(&elevator.mutex) != 0)
+        mutex_unlock(&elevator);
+    else
+        mutex_unlock(&elevator);
+
     if(mutex_lock_interruptible(&elevator.mutex) == 0){
         list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
             p = list_entry(temp, Passenger, list);
@@ -151,6 +156,11 @@ void load_elevator(void){
 void unload_elevator(void) {
     struct list_head *temp, *dummy;
     Passenger *p;
+
+    if(mutex_trylock(&elevator.mutex) != 0)
+        mutex_unlock(&elevator);
+    else
+        mutex_unlock(&elevator);
 
     if(mutex_lock_interruptible(&elevator.mutex) == 0) {
         list_for_each_safe(temp, dummy, &elevator.passengerList.list) {
@@ -313,6 +323,21 @@ int elevator_run(void *data){
 
     printk(KERN_INFO "Elevator thread started.\n");
 
+
+    // while(!kthread_should_stop()){
+    //     if (mutex_lock_interruptible(&elevator->mutex) != 0) {
+    //         continue;
+    //     }
+
+    //     if(elevator->state == IDLE){
+    //         if (elevator->passenger_queue.total_cnt > 0 || elevator->passengerList.total_cnt > 0) {
+    //                 elevator->state = LOADING;
+    //             }
+    //     }else if(elevator->state == LOADING){
+            
+    //     }
+    // }
+
     while (!kthread_should_stop()) {
         if (mutex_lock_interruptible(&elevator->mutex) != 0) {
             continue;
@@ -327,10 +352,10 @@ int elevator_run(void *data){
                 break;
 
             case LOADING:
-                mutex_unlock(&elevator->mutex);
+                //mutex_unlock(&elevator->mutex);
                 load_elevator();
                 unload_elevator();
-                mutex_lock(&elevator->mutex);
+                //mutex_lock(&elevator->mutex);
 
                 prink(KERN_INFO "reached past loading lock with unload/load");
                 if (elevator->passenger_queue.total_cnt > 0) {
