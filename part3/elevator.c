@@ -327,9 +327,11 @@ int elevator_run(void *data){
                 break;
 
             case LOADING:
-                //mutex_unlock(&elevator->mutex);
+                mutex_unlock(&elevator->mutex);
                 load_elevator();
                 unload_elevator();
+                mutex_lock(&elevator->mutex);
+
 
                 if (elevator->passenger_queue.total_cnt > 0) {
                     int next_floor = find_next_possible_floor();
