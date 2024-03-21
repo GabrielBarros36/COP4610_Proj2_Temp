@@ -332,7 +332,7 @@ int elevator_run(void *data){
                 unload_elevator();
                 mutex_lock(&elevator->mutex);
 
-
+                prink(KERN_INFO "reached past loading lock with unload/load");
                 if (elevator->passenger_queue.total_cnt > 0) {
                     int next_floor = find_next_possible_floor();
                     if (next_floor != -1) {
