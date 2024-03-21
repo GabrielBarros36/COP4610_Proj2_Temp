@@ -158,9 +158,9 @@ void unload_elevator(void) {
     Passenger *p;
 
     if(mutex_trylock(&elevator.mutex) != 0)
-        mutex_unlock(&elevator);
+        mutex_unlock(&elevator.mutex);
     else
-        mutex_unlock(&elevator);
+        mutex_unlock(&elevator.mutex);
 
     if(mutex_lock_interruptible(&elevator.mutex) == 0) {
         list_for_each_safe(temp, dummy, &elevator.passengerList.list) {
@@ -334,8 +334,41 @@ int elevator_run(void *data){
     //                 elevator->state = LOADING;
     //             }
     //     }else if(elevator->state == LOADING){
-            
+    //         struct list_head *temp, *dummy;
+    //         Passenger *p;
+
+    //         if(mutex_trylock(&elevator.mutex) != 0)
+    //             mutex_unlock(&elevator);
+    //         else
+    //             mutex_unlock(&elevator);
+
+    //         if(mutex_lock_interruptible(&elevator.mutex) == 0){
+    //             list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
+    //                 p = list_entry(temp, Passenger, list);
+
+    //                 if (p -> startFloor == elevator.cur_floor &&
+    //                     elevator.passengerList.total_cnt < ELEVATOR_LIMIT &&
+    //                     (elevator.passengerList.total_weight_int + p -> weight_int) +
+    //                     (elevator.passengerList.total_weight_dec + p -> weight_dec) / 10 <= WEIGHT_LIMIT) {
+
+    //                     elevator.passengerList.total_weight_int += p -> weight_int;
+    //                     elevator.passengerList.total_weight_dec += p -> weight_dec;
+
+    //                     elevator.passengerList.total_cnt++;
+    //                     elevator.passenger_queue.total_cnt--;        //update queue cnt
+
+    //                     list_move_tail(temp, &elevator.passengerList.list);
+
+    //                     printk(KERN_INFO "Passenger Sucessfully Loaded, Start Floor: %d to Destination Floor %d\n", p -> startFloor, p -> destFloor);
+    //                 }
+    //             }
+    //             mutex_unlock(&elevator.mutex);
+    //         } else {
+    //             printk(KERN_ALERT "Failure in locking when loading elevator. \n");
+    //         }
     //     }
+
+        
     // }
 
     while (!kthread_should_stop()) {
@@ -352,14 +385,18 @@ int elevator_run(void *data){
                 break;
 
             case LOADING:
-                //mutex_unlock(&elevator->mutex);
-                load_elevator();
-                unload_elevator();
-                //mutex_lock(&elevator->mutex);
 
-                prink(KERN_INFO "reached past loading lock with unload/load");
+                if(elevator->passenger_queue.total_cnt != 0){
+                    load_elevator();
+                }
+
+                if(elevator->passengerList.total_cnt != 0){
+                    //unload_elevator();
+
+                }
+
                 if (elevator->passenger_queue.total_cnt > 0) {
-                    int next_floor = find_next_possible_floor();
+                    int next_floor = (elevator->cur_floor == 1 ? 5 : elevator->cur_floor - 1)                         //int next_floor = find_next_possible_floor(); (TESTING SIMPLER ALG TO FIND ISSUES)
                     if (next_floor != -1) {
                         elevator->dest_floor = next_floor;
                         elevator->state = (next_floor > elevator->cur_floor) ? UP : DOWN;
