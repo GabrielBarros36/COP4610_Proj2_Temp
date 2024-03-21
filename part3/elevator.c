@@ -390,10 +390,10 @@ int elevator_run(void *data){
                     load_elevator();
                 }
 
-                // if(elevator->passengerList.total_cnt != 0){
-                //     //unload_elevator();
+                if(elevator->passengerList.total_cnt != 0){
+                    unload_elevator();
 
-                // }
+                }
 
                 if (elevator->passenger_queue.total_cnt > 0 || elevator->passengerList.total_cnt > 0) {
                     int next_floor = (elevator->cur_floor == 1 ? 5 : elevator->cur_floor - 1);                         //int next_floor = find_next_possible_floor(); (TESTING SIMPLER ALG TO FIND ISSUES)
