@@ -220,7 +220,7 @@ int find_next_possible_floor(void) {
 //Our implementation of the issue_request syscall
 //Creates a passenger struct with the passenger's weight and adds that struct
 //to the passenger queue
-int custom_issue_request(int passengerType, int startFloor, int destinationFloor){
+int custom_issue_request(int startFloor, int destinationFloor, int passengerType){
 
     Passenger *a;
     a = kmalloc(sizeof(Passenger) * 1, __GFP_RECLAIM);
