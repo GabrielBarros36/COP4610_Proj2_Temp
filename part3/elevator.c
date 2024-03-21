@@ -135,6 +135,7 @@ void load_elevator(void){
                 elevator.passengerList.total_weight_dec += p -> weight_dec;
 
                 elevator.passengerList.total_cnt++;
+                elevator.passenger_queue.total_cnt--;        //update queue cnt
 
                 list_move_tail(temp, &elevator.passengerList.list);
 
@@ -158,7 +159,9 @@ void unload_elevator(void) {
             if(p->destFloor == elevator.cur_floor) {
                 elevator.passengerList.total_weight_int -= p->weight_int;
                 elevator.passengerList.total_weight_dec -= p->weight_dec;
+
                 elevator.passengerList.total_cnt--;
+                elevator.passenger_queue.total_cnt
 
                 list_del(temp);
                 kfree(p);
