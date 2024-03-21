@@ -141,6 +141,7 @@ void load_elevator(void){
 
                 elevator.passengerList.total_cnt++;
                 elevator.passenger_queue.total_cnt--;        //update queue cnt
+                elevator.passenger_queue.waiting_passengers[elevator.cur_floor - 1]--;
 
                 list_move_tail(temp, &elevator.passengerList.list);
 
@@ -277,6 +278,7 @@ int custom_issue_request(int startFloor, int destinationFloor, int passengerType
     //Add passenger to end of queue of waiting passengers
     list_add_tail(&a->list, &elevator.passenger_queue.list);
     elevator.passenger_queue.total_cnt++;
+    elevator.passenger_queue.waiting_passengers[elevator.startFloor - 1]++;
 
     return 0;
 }
@@ -323,54 +325,6 @@ int elevator_run(void *data){
 
     printk(KERN_INFO "Elevator thread started.\n");
 
-
-    // while(!kthread_should_stop()){
-    //     if (mutex_lock_interruptible(&elevator->mutex) != 0) {
-    //         continue;
-    //     }
-
-    //     if(elevator->state == IDLE){
-    //         if (elevator->passenger_queue.total_cnt > 0 || elevator->passengerList.total_cnt > 0) {
-    //                 elevator->state = LOADING;
-    //             }
-    //     }else if(elevator->state == LOADING){
-    //         struct list_head *temp, *dummy;
-    //         Passenger *p;
-
-    //         if(mutex_trylock(&elevator.mutex) != 0)
-    //             mutex_unlock(&elevator);
-    //         else
-    //             mutex_unlock(&elevator);
-
-    //         if(mutex_lock_interruptible(&elevator.mutex) == 0){
-    //             list_for_each_safe(temp, dummy, &elevator.passenger_queue.list){
-    //                 p = list_entry(temp, Passenger, list);
-
-    //                 if (p -> startFloor == elevator.cur_floor &&
-    //                     elevator.passengerList.total_cnt < ELEVATOR_LIMIT &&
-    //                     (elevator.passengerList.total_weight_int + p -> weight_int) +
-    //                     (elevator.passengerList.total_weight_dec + p -> weight_dec) / 10 <= WEIGHT_LIMIT) {
-
-    //                     elevator.passengerList.total_weight_int += p -> weight_int;
-    //                     elevator.passengerList.total_weight_dec += p -> weight_dec;
-
-    //                     elevator.passengerList.total_cnt++;
-    //                     elevator.passenger_queue.total_cnt--;        //update queue cnt
-
-    //                     list_move_tail(temp, &elevator.passengerList.list);
-
-    //                     printk(KERN_INFO "Passenger Sucessfully Loaded, Start Floor: %d to Destination Floor %d\n", p -> startFloor, p -> destFloor);
-    //                 }
-    //             }
-    //             mutex_unlock(&elevator.mutex);
-    //         } else {
-    //             printk(KERN_ALERT "Failure in locking when loading elevator. \n");
-    //         }
-    //     }
-
-        
-    // }
-
     while (!kthread_should_stop()) {
         if (mutex_lock_interruptible(&elevator->mutex) != 0) {
             continue;
@@ -392,7 +346,6 @@ int elevator_run(void *data){
 
                 if(elevator->passengerList.total_cnt != 0){
                     unload_elevator();
-
                 }
 
                 if (elevator->passenger_queue.total_cnt > 0 || elevator->passengerList.total_cnt > 0) {
@@ -507,13 +460,13 @@ static ssize_t elevator_read(struct file *file, char __user *ubuf, size_t count,
     	}
 
         Passenger *pass2, *temp;
-        int perFloor = 0;
+        /*int perFloor = 0;
         list_for_each_entry(temp, &elevator.passenger_queue.list, list){    //Calculate waiting_passengers per floor
             if(temp->startFloor == i){
                  perFloor++; 
             }
                 elevator.passenger_queue.waiting_passengers[i-1] = perFloor;
-        }
+        }*/
 
         len += sprintf(buf + len, " %d", elevator.passenger_queue.waiting_passengers[i-1]);
 
