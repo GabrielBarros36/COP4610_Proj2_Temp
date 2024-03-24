@@ -1,6 +1,4 @@
-# Shell
-
-A program written in C that emulates the basic functionalities of a UNIX shell. 
+# Elevator
 
 ## Group Number
 7
